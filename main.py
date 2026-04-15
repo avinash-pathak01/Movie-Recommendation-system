@@ -275,6 +275,30 @@ async def attach_tmdb_card_by_title(title: str) -> Optional[TMDBMovieCard]:
         )
     except Exception:
         return None
+import gdown
+
+# =========================
+# DOWNLOAD FILES (FROM DRIVE)
+# =========================
+
+FILE_IDS = {
+    "df": "https://drive.google.com/file/d/1CytJ1cjyjJMLf8pPMKfjaA-XZ9y525LT/view?usp=drive_link",
+    "indices": "YOUR_INDICES_FILE_ID",
+    "tfidf_matrix": "YOUR_TFIDF_MATRIX_FILE_ID",
+    "tfidf": "YOUR_TFIDF_FILE_ID",
+}
+
+def download_file(file_id, output_path):
+    if not os.path.exists(output_path):
+        print(f"Downloading {output_path}...")
+        url = f"https://drive.google.com/uc?id={file_id}"
+        gdown.download(url, output_path, quiet=False)
+
+def ensure_files():
+    download_file(FILE_IDS["df"], DF_PATH)
+    download_file(FILE_IDS["indices"], INDICES_PATH)
+    download_file(FILE_IDS["tfidf_matrix"], TFIDF_MATRIX_PATH)
+    download_file(FILE_IDS["tfidf"], TFIDF_PATH)
 
 
 # =========================
@@ -284,6 +308,9 @@ async def attach_tmdb_card_by_title(title: str) -> Optional[TMDBMovieCard]:
 def load_pickles():
     global df, indices_obj, tfidf_matrix, tfidf_obj, TITLE_TO_IDX
 
+    # 🔥 Ensure files are downloaded first
+    ensure_files()
+
     # Load df
     with open(DF_PATH, "rb") as f:
         df = pickle.load(f)
@@ -292,20 +319,19 @@ def load_pickles():
     with open(INDICES_PATH, "rb") as f:
         indices_obj = pickle.load(f)
 
-    # Load TF-IDF matrix (usually scipy sparse)
+    # Load TF-IDF matrix
     with open(TFIDF_MATRIX_PATH, "rb") as f:
         tfidf_matrix = pickle.load(f)
 
-    # Load tfidf vectorizer (optional, not used directly here)
+    # Load tfidf
     with open(TFIDF_PATH, "rb") as f:
         tfidf_obj = pickle.load(f)
 
-    # Build normalized map
+    # Build map
     TITLE_TO_IDX = build_title_to_idx_map(indices_obj)
 
-    # sanity
     if df is None or "title" not in df.columns:
-        raise RuntimeError("df.pkl must contain a DataFrame with a 'title' column")
+        raise RuntimeError("df.pkl must contain 'title' column")
 
 
 # =========================
